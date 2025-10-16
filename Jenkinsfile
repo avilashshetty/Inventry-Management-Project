@@ -1,91 +1,139 @@
 pipeline {
     agent any
-
-    parameters {
-        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Tag for the Docker image')
-    }
-
     environment {
-        DOCKER_IMAGE = "rahul69980/invenory_image:${params.IMAGE_TAG}"
-        DOCKER_REPO = "rahul69980/invenory_image"
+        DOCKER_IMAGE = "rahul69980/invenory_image"
+        DOCKER_TAG   = "${BUILD_NUMBER}"
+        EKS_CLUSTER_NAME = "inventory-eks"
+        AWS_REGION = "ap-northeast-2"
     }
-
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/rahul69980/Inventry-Management-Project.git'
+                git credentialsId: 'Github_credentials',
+                    branch: 'main',
+                    url: 'https://github.com/rahul69980/Inventry-Management-Project.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}")
-                }
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'Docker_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                }
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REPO}:${params.IMAGE_TAG}"
-                    sh "docker push ${DOCKER_REPO}:${params.IMAGE_TAG}"
+                    echo "🛠️ Building Docker image..."
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                    docker.build("${DOCKER_IMAGE}:latest")
                 }
             }
         }
 
         stage('Docker Compose Test') {
             steps {
-                echo '🧪 Running Docker Compose test...'
-                sh '/usr/local/bin/docker-compose up -d --build'
-                sh '/usr/local/bin/docker-compose ps'
-                sh '/usr/local/bin/docker-compose down'
+                script {
+                    echo "🧪 Testing with Docker Compose..."
+                    sh '''
+                        docker-compose down -v
+                        docker-compose build
+                        docker-compose up -d
+                        sleep 30
+                        docker-compose ps
+
+                        i=1
+                        while [ $i -le 5 ]; do
+                            if curl -f http://localhost:3000 >/dev/null 2>&1; then
+                                echo "✅ Application is responding"
+                                break
+                            fi
+                            echo "⏳ Waiting for application... attempt $i/5"
+                            i=$((i+1))
+                            sleep 10
+                        done
+                    '''
+                }
             }
         }
 
-        stage('Deploy MongoDB to Kubernetes') {
+        stage('Push Docker Image') {
             steps {
-                echo '📦 Deploying MongoDB...'
-                sh 'kubectl apply -f mongodb-deployement.yaml --validate=false'
+                script {
+                    echo "📦 Pushing Docker image..."
+                    docker.withRegistry('https://index.docker.io/v1/', 'Dockerhub') {
+                        sh """
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker push ${DOCKER_IMAGE}:latest
+                        """
+                    }
+                    echo "✅ Docker images pushed successfully"
+                }
             }
         }
 
-        stage('Deploy App to Kubernetes') {
+        stage('Deploy to Kubernetes') {
             steps {
-                echo '🚀 Deploying Application...'
-                sh 'kubectl apply -f app-deployement.yaml --validate=false'
-            }
-        }
+                withAWS(credentials: 'aws_cred', region: "${AWS_REGION}") {
+                    script {
+                        sh """
+                            echo "🔄 Updating kubeconfig..."
+                            aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}
 
-        stage('Deploy Datadog Agent') {
-            steps {
-                echo '📈 Deploying Datadog Agent...'
-                sh 'kubectl apply -f datadog-agent.yaml --validate=false'
+                            echo "🚀 Deploying to Kubernetes..."
+                            kubectl apply -f mongodb-deployement.yaml
+                            kubectl apply -f app-deployement.yaml
+                            kubectl set image deployment/lost-and-found-app \\
+                                lost-and-found-app=${DOCKER_IMAGE}:${DOCKER_TAG} --record
+
+                            echo "⏳ Waiting for deployments to complete..."
+                            kubectl rollout status deployment/mongodb --timeout=300s
+                            kubectl rollout status deployment/lost-and-found-app --timeout=300s
+
+                            echo "📊 Deployment status:"
+                            kubectl get deployments
+                            kubectl get services
+                            kubectl get pods
+                        """
+                    }
+                }
             }
         }
 
         stage('Get LoadBalancer URL') {
             steps {
-                echo '🌐 Fetching LoadBalancer URL...'
-                sh 'kubectl get svc inventory-service -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"'
+                withAWS(credentials: 'aws_cred', region: "${AWS_REGION}") {
+                    script {
+                        sh '''
+                            echo "🌐 Getting LoadBalancer URL..."
+                            aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}
+
+                            i=1
+                            while [ $i -le 10 ]; do
+                                EXTERNAL_IP=$(kubectl get service app-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+                                EXTERNAL_HOSTNAME=$(kubectl get service app-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+
+                                if [ ! -z "$EXTERNAL_IP" ]; then
+                                    echo "🌐 Application URL: http://$EXTERNAL_IP"
+                                    break
+                                elif [ ! -z "$EXTERNAL_HOSTNAME" ]; then
+                                    echo "🌐 Application URL: http://$EXTERNAL_HOSTNAME"
+                                    break
+                                fi
+
+                                echo "⏳ Waiting for LoadBalancer... attempt $i/10"
+                                i=$((i+1))
+                                sleep 20
+                            done
+
+                            kubectl get service app-service
+                            echo "✅ Deployment completed successfully!"
+                        '''
+                    }
+                }
             }
         }
     }
-
     post {
         success {
-            echo "✅ Build and deployment completed successfully!"
+            echo "✅ Deployment successful!"
         }
         failure {
-            echo "❌ Build or deployment failed. Check logs for details."
+            echo "❌ Deployment failed!"
         }
     }
 }
