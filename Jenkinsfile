@@ -1,45 +1,54 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Tag for the Docker image')
+    }
+
     environment {
-        DOCKER_IMAGE = 'rahul69980/invenory_image'
-        IMAGE_TAG = '5'
-        LATEST_TAG = 'latest'
+        DOCKER_IMAGE = "rahul69980/invenory_image:${params.IMAGE_TAG}"
+        DOCKER_REPO = "rahul69980/invenory_image"
+        ECR_REPO = "636768524979.dkr.ecr.ap-northeast-2.amazonaws.com/inventory_ecr" // Replace if using ECR
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout Code') {
             steps {
-                echo '🔄 Checking out source code...'
-                git url: 'https://github.com/rahul69980/Inventry-Management-Project.git'
+                git branch: 'master', url: 'https://github.com/rahul69980/Inventry-Management-Project.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo '🛠️ Building Docker image...'
-                sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
-                sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:${LATEST_TAG}"
+                script {
+                    docker.build("${DOCKER_IMAGE}")
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Docker_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REPO}:${params.IMAGE_TAG}"
+                    sh "docker push ${DOCKER_REPO}:${params.IMAGE_TAG}"
+                }
             }
         }
 
         stage('Docker Compose Test') {
             steps {
                 echo '🧪 Running Docker Compose test...'
-                sh 'docker-compose up -d --build'
-                sh 'docker-compose ps'
-                sh 'docker-compose down'
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                echo '📤 Pushing Docker image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'Dockerhub_credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                }
-                sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_IMAGE}:${LATEST_TAG}"
+                sh '/usr/local/bin/docker-compose up -d --build'
+                sh '/usr/local/bin/docker-compose ps'
+                sh '/usr/local/bin/docker-compose down'
             }
         }
 
@@ -74,10 +83,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Deployment succeeded!'
+            echo "✅ Build and deployment completed successfully!"
         }
         failure {
-            echo '❌ Deployment failed!'
+            echo "❌ Build or deployment failed. Check logs for details."
         }
     }
 }
