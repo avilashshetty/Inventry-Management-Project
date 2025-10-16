@@ -1,17 +1,17 @@
 pipeline {
     agent any
     environment {
-        DOCKER_IMAGE = "vishalsinghal07/try-app"
+        DOCKER_IMAGE = "rahul69980/invenory_image:v1.1.0"
         DOCKER_TAG   = "${BUILD_NUMBER}"
-        EKS_CLUSTER_NAME = "vishal-test-cluster"
-        AWS_REGION = "ap-south-1"
+        EKS_CLUSTER_NAME = "invenory_eks"
+        AWS_REGION = "ap-northeast-2"
     }
     stages {
         stage('Checkout') {
             steps {
                 git credentialsId: 'Github_credentials',
-                    branch: 'main',
-                    url: 'https://github.com/vishalsinghalit24-prog/Project_try.git'
+                    branch: 'master',
+                    url: 'https://github.com/rahul69980/Inventry-Management-Project.git'
             }
         }
  
