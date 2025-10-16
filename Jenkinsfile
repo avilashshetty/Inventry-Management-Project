@@ -68,7 +68,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withAWS(credentials: 'aws_cred', region: "${AWS_REGION}") {
+                withAWS(credentials: 'AWS_credentials', region: "${AWS_REGION}") {
                     script {
                         sh """
                             echo "🔄 Updating kubeconfig..."
@@ -96,7 +96,7 @@ pipeline {
 
         stage('Get LoadBalancer URL') {
             steps {
-                withAWS(credentials: 'aws_cred', region: "${AWS_REGION}") {
+                withAWS(credentials: 'AWS_credentials', region: "${AWS_REGION}") {
                     script {
                         sh '''
                             echo "🌐 Getting LoadBalancer URL..."
