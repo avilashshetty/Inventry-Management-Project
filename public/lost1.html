@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Report Lost Items - Smart Lost & Found</title>
+  <link rel="stylesheet" href="lost1.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+   <nav>
+    <div class="logo">
+            <i class="fas fa-search"></i>
+            <span>Lost<span class="accent">&</span>Found</span>
+          </div>
+    <ul id="nav-links">
+      <li><a href="try1.html">Home</a></li>
+      <li><a href="lost1.html">lost</a></li>
+      <li><a href="submit1.html">Submit</a></li>
+      <li><a href="track1.html">Track</a></li>
+      <li id="authArea">
+        <span class="nav-btn" onclick="openModal('loginModal')">Login / Signup</span>
+      </li>
+    </ul>
+  </nav>
+  <div id="toast" style="
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 5px;
+  display: none;
+  z-index: 1001;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+">
+  Welcome!
+</div>
+<!-- Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('loginModal')">&times;</span>
+      <h2>Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email" required>
+      <input type="password" placeholder="Password" required>
+      <button id="loginBtn">Login</button>
+      <p style="margin-top:10px;">Don't have an account? <span class="nav-btn" style="color:#004d7a;" onclick="switchModal()">Register here</span></p>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div class="modal" id="registerModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('registerModal')">&times;</span>
+      <h2>Register</h2>
+      <input type="text" placeholder="Full Name" required>
+      <input type="email" placeholder="Email" required>
+     <!-- Example inside your register modal -->
+<input type="password" id="registerPassword" placeholder="Password" required>
+<input type="password" id="registerConfirmPassword" placeholder="Confirm Password" required>
+<input type="text" id="registerContact" placeholder="Contact Number" required>
+      <button id="registerBtn">Register</button>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search lost items by name, category, or location..." />
+    
+      
+    <button onclick="openForm()">Report Lost</button>
+  </div>
+  
+  <div class="success-message" id="successMsg"></div>
+
+  <div class="container" id="cardContainer">
+    <!-- Cards inserted dynamically -->
+  </div>
+
+<!-- Report Lost Item Modal -->
+<div id="reportModal" class="modal">
+  <div class="modal-content">
+    <h2>Report Lost Item</h2>
+     <input type="text" name="foundName" placeholder="Your Name" required />
+    <input id="itemName" placeholder="Item Name" />
+    <input id="itemCategory" placeholder="Category" />
+    <input type="text" name="color" placeholder="Color" required />
+    <input id="itemLocation" placeholder="Location" />
+    <input id="itemDate" type="date" placeholder="Date" />
+    <input id="itemImage" placeholder="Image URL (optional)" />
+    <input name="contact" id="itemContact" placeholder="Contact Number" />
+    <input name="email" id="itemEmail" placeholder="Email" />
+    <button id="submitReportButton" onclick="submitReport()">Submit</button>
+  </div>
+</div>
+
+  
+</div>
+
+
+<!-- Footer -->
+  <footer class="footer" id="contact">
+    <div class="container1">
+      <div class="footer-content">
+        <div class="footer-section">
+          <div class="footer-logo">
+            <i class="fas fa-search"></i>
+            <span>Lost<span class="accent">&</span>Found</span>
+          </div>
+          <p>Reuniting people with their belongings through innovative technology and community support.</p>
+          <div class="social-links">
+            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+          </div>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="lost1.html">Report Lost</a></li>
+            <li><a href="submit1.html">Submit Found</a></li>
+            <li><a href="track1.html">Track Items</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Support</h3>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Community Guidelines</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Contact Us</h3>
+          <div class="contact-info">
+            <div class="contact-item">
+              <i class="fas fa-envelope"></i>
+              <span>support@lostandfound.com</span>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <span>+1 (555) 123-4567</span>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>123 Innovation St, Tech City</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        
+      </div>
+    </div>
+  </footer>
+
+  <script src="lost1.js"></script>
+</body>
+</html>
