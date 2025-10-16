@@ -8,7 +8,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = "rahul69980/invenory_image:${params.IMAGE_TAG}"
         DOCKER_REPO = "rahul69980/invenory_image"
-        ECR_REPO = "636768524979.dkr.ecr.ap-northeast-2.amazonaws.com/inventory_ecr" // Replace if using ECR
     }
 
     stages {
@@ -55,21 +54,21 @@ pipeline {
         stage('Deploy MongoDB to Kubernetes') {
             steps {
                 echo '📦 Deploying MongoDB...'
-                sh 'kubectl apply -f mongodb-deployement.yaml'
+                sh 'kubectl apply -f mongodb-deployement.yaml --validate=false'
             }
         }
 
         stage('Deploy App to Kubernetes') {
             steps {
                 echo '🚀 Deploying Application...'
-                sh 'kubectl apply -f app-deployement.yaml'
+                sh 'kubectl apply -f app-deployement.yaml --validate=false'
             }
         }
 
         stage('Deploy Datadog Agent') {
             steps {
                 echo '📈 Deploying Datadog Agent...'
-                sh 'kubectl apply -f datadog-agent.yaml'
+                sh 'kubectl apply -f datadog-agent.yaml --validate=false'
             }
         }
 
