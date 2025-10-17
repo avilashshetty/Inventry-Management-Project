@@ -16,6 +16,7 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p public/uploads
 
+ENV PORT=3000
 # Expose port 3000
 EXPOSE 3000
 
